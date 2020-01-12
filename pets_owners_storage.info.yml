@@ -1,0 +1,9 @@
+name: Pets Owners Storage
+description: The module depend on "Pets Owners". It will create custom db and will be change.
+package: Custom
+
+type: module
+core: 8.x
+
+dependencies:
+  - pets_owners

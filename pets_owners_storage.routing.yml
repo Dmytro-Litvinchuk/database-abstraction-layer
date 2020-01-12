@@ -1,0 +1,16 @@
+pets_owners_storage.content:
+  path: '/pets_owners_list'
+  defaults:
+    _controller: '\Drupal\pets_owners_storage\Controller\PetsDataController::getContent'
+    _title: 'Pets owners list'
+  requirements:
+    _permission: 'access content'
+
+pets_owners_storage.delete:
+  path: '/pets_owners_delete/{pid}'
+  defaults:
+    _controller: '\Drupal\pets_owners_storage\Controller\PetsDeleteController::delete'
+    _title: 'Pets owners delete'
+  requirements:
+    _permission: 'access content'
+    pid: \d+
