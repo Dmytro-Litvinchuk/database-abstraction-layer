@@ -14,3 +14,12 @@ pets_owners_storage.delete:
   requirements:
     _permission: 'access content'
     pid: \d+
+
+pets_owners_storage.edit:
+  path: '/pets_owners_edit/{pid}'
+  defaults:
+    _form: '\Drupal\pets_owners_storage\Form\PetsOwnersForm'
+    _title: 'Pets owners edit'
+  requirements:
+    _permission: 'access content'
+    pid: \d+
