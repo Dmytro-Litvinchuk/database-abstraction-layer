@@ -20,7 +20,13 @@ class PetsDataController extends ControllerBase {
   public function getContent() {
     $content = [];
     $content['message'] = [
-      '#markup' => $this->t('Generate a list of all entries in the database.'),
+      '#markup' => $this->t('Generate a list of all entries in the database from '),
+    ];
+    // Render link.
+    $content['link'] = [
+      '#title' => $this->t('Form'),
+      '#type' => 'link',
+      '#url' => Url::fromRoute('pets_owners.form'),
     ];
     $headers = [
       $this->t('Id'),

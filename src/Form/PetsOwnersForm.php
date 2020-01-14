@@ -46,14 +46,21 @@ class PetsOwnersForm extends FormPetsOwners {
       $form['prefix']['#default_value'] = $values['prefix'];
       $form['gender']['#default_value'] = $values['gender'];
       $form['age']['#default_value'] = $values['age'];
-      $form['father']['#default_value'] = $values['father'];
-      $form['mother']['#default_value'] = $values['mother'];
+      $form['parents']['father']['#default_value'] = $values['father'];
+      $form['parents']['mother']['#default_value'] = $values['mother'];
       $form['have_pets']['#default_value'] = 1;
       $form['pets_name']['#default_value'] = $values['pets_name'];
       $form['email']['#default_value'] = $values['email'];
+      $form['actions']['submit']['#value'] = $this->t('Change');
       // Pass value $pid to submit form.
       $form_state->set('pid', $pid);
     }
+    $form['actions']['delete'] = [
+      '#type' => 'submit',
+      '#value' => 'delete',
+      // Custom function on submit.
+      '#submit' => ['::delete'],
+    ];
     return $form;
   }
 
@@ -62,6 +69,23 @@ class PetsOwnersForm extends FormPetsOwners {
    */
   public function validateForm(array &$form, FormStateInterface $form_state) {
     parent::validateForm($form, $form_state);
+  }
+
+  /**
+   * Custom submit function delete from DB.
+   *
+   * @param array $form
+   * @param \Drupal\Core\Form\FormStateInterface $form_state
+   */
+  public function delete(array &$form, FormStateInterface $form_state) {
+    $pid = $form_state->get('pid');
+    $query = \Drupal::database();
+    $query->delete('pets_owners_storage')
+      ->condition('pid', $pid)
+      ->execute();
+    $text = 'Record pid => ' . $pid . ' was removed from database.';
+    \Drupal::messenger()->addMessage($text);
+    $form_state->setRedirect('pets_owners_storage.content');
   }
 
   /**
