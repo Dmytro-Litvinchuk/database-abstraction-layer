@@ -3,15 +3,15 @@
 namespace Drupal\pets_owners_storage\Form;
 
 use Drupal\Core\Database\Database;
+use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\pets_owners\Form\FormPetsOwners;
 
 /**
  * Class PetsOwnersForm.
  *
  * @package Drupal\pets_owners_storage\Form
  */
-class PetsOwnersForm extends FormPetsOwners {
+class PetsOwnersForm extends FormBase {
 
   /**
    * @inheritDoc
@@ -39,8 +39,97 @@ class PetsOwnersForm extends FormPetsOwners {
         'email',
       ])->condition('pid', $pid)
       ->execute()->fetchAssoc();
-    // Used all fields of parent form.
-    $form = parent::buildForm($form, $form_state);
+    // Build.
+    $form['name'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('Name'),
+      '#maxlength' => 100,
+      '#size' => 100,
+      '#required' => TRUE,
+    ];
+    $gender = [
+      'male' => $this->t('male'),
+      'female' => $this->t('female'),
+      'unknown' => $this->t('unknown'),
+    ];
+    $form['gender'] = [
+      '#type' => 'radios',
+      '#title' => $this->t('Gender'),
+      '#options' => $gender,
+      '#default_value' => $gender['unknown'],
+    ];
+    $prefix = [
+      'mr' => $this->t('mr'),
+      'mrs' => $this->t('mrs'),
+      'ms' => $this->t('ms'),
+    ];
+    $form['prefix'] = [
+      '#type' => 'select',
+      '#title' => $this->t('Prefix'),
+      '#options' => $prefix,
+      '#default_value' => $prefix['mr'],
+    ];
+    $form['age'] = [
+      '#type' => 'number',
+      '#title' => $this->t('Age'),
+      '#min' => 1,
+      '#max' => 120,
+      '#required' => TRUE,
+    ];
+    /**
+     * Only under 18 years.
+     */
+    $condition = [];
+    for ($i = 1; $i < 18; $i++) {
+      $some_e = [':input[name="age"]' => ['value' => "$i"]];
+      $condition[] = $some_e;
+    }
+    $form['parents'] = [
+      '#type' => 'container',
+      '#attributes' => [
+        'class' => [
+          'accommodation',
+        ],
+      ],
+      '#states' => [
+        'visible' => $condition,
+      ],
+    ];
+    $form['parents']['father'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('Father`s name'),
+    ];
+    $form['parents']['mother'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('Mother`s name'),
+    ];
+    $form['have_pets'] = [
+      '#type' => 'checkbox',
+      '#title' => $this->t('Have you some pets?'),
+    ];
+    $form['pets_name'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('Names(s) of your pet(s)'),
+      '#states' => [
+        'invisible' => [
+          'input[name="have_pets"]' => [
+            'checked' => FALSE,
+          ],
+        ],
+      ],
+    ];
+    $form['email'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('Email'),
+      '#required' => TRUE,
+    ];
+    $form['actions']['submit'] = [
+      '#type' => 'submit',
+      '#value' => $this->t('Submit'),
+    ];
+    /**
+     * Condition
+     */
     if (!empty($values)) {
       $form['name']['#default_value'] = $values['name'];
       $form['prefix']['#default_value'] = $values['prefix'];
@@ -51,16 +140,21 @@ class PetsOwnersForm extends FormPetsOwners {
       $form['have_pets']['#default_value'] = 1;
       $form['pets_name']['#default_value'] = $values['pets_name'];
       $form['email']['#default_value'] = $values['email'];
-      $form['actions']['submit']['#value'] = $this->t('Change');
+      $form['actions']['delete'] = [
+        '#type' => 'submit',
+        '#value' => 'delete',
+        // Custom function on submit.
+        '#submit' => ['::delete'],
+      ];
+      $form['actions']['submit'] = [
+        '#type' => 'submit',
+        '#value' => $this->t('Change'),
+        '#submit' => ['::change'],
+      ];
       // Pass value $pid to submit form.
       $form_state->set('pid', $pid);
     }
-    $form['actions']['delete'] = [
-      '#type' => 'submit',
-      '#value' => 'delete',
-      // Custom function on submit.
-      '#submit' => ['::delete'],
-    ];
+
     return $form;
   }
 
@@ -68,7 +162,37 @@ class PetsOwnersForm extends FormPetsOwners {
    * @inheritDoc
    */
   public function validateForm(array &$form, FormStateInterface $form_state) {
-    parent::validateForm($form, $form_state);
+    if (($form_state->getValue('age') < '1') || ($form_state->getValue('age') > '120')) {
+      $form_state->setErrorByName('age', $this->t('Please enter valid age'));
+    }
+
+    if (empty(trim($form_state->getValue('name'))) || (mb_strlen($form_state->getValue('name')) > 100)) {
+      $form_state->setErrorByName('name', $this->t('Please enter valid name'));
+    }
+
+    if (!$form_state->getValue('email') || !filter_var($form_state->getValue('email'), FILTER_VALIDATE_EMAIL)) {
+      $form_state->setErrorByName('email', $this->t('Please enter valid email address'));
+    }
+  }
+
+  /**
+   * @inheritDoc
+   */
+  public function submitForm(array &$form, FormStateInterface $form_state) {
+    $connection = Database::getConnection();
+    $connection->insert('pets_owners_storage')
+      ->fields([
+        'prefix' => $form_state->getValue('prefix'),
+        'name' => $form_state->getValue('name'),
+        'gender' => $form_state->getValue('gender'),
+        'age' => $form_state->getValue('age'),
+        'father' => $form_state->getValue('father'),
+        'mother' => $form_state->getValue('mother'),
+        'pets_name' => $form_state->getValue('pets_name'),
+        'email' => $form_state->getValue('email'),
+      ])
+      ->execute();
+    $form_state->setRedirect('pets_owners_storage.content');
   }
 
   /**
@@ -89,9 +213,9 @@ class PetsOwnersForm extends FormPetsOwners {
   }
 
   /**
-   * @inheritDoc
+   * Change value of the form.
    */
-  public function submitForm(array &$form, FormStateInterface $form_state) {
+  public function change(array &$form, FormStateInterface $form_state) {
     $pid = $form_state->get('pid');
     $query = \Drupal::database();
     $query->update('pets_owners_storage')

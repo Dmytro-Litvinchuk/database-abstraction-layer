@@ -26,7 +26,7 @@ class PetsDataController extends ControllerBase {
     $content['link'] = [
       '#title' => $this->t('Form'),
       '#type' => 'link',
-      '#url' => Url::fromRoute('pets_owners.form'),
+      '#url' => Url::fromRoute('pets_owners_storage.form'),
     ];
     $headers = [
       $this->t('Id'),
@@ -60,7 +60,7 @@ class PetsDataController extends ControllerBase {
       $rows[] = array_map('Drupal\Component\Utility\Html::escape', (array) $entry);
       $delete = Url::fromUserInput('/pets_owners_delete/' . $rows[$i]['pid']);
       $rows[$i]['delete'] = Link::fromTextAndUrl('Delete', $delete);
-      $edit = Url::fromUserInput('/pets_owners_edit/' . $rows[$i]['pid']);
+      $edit = Url::fromUserInput('/pets_owners_form/' . $rows[$i]['pid']);
       $rows[$i]['edit'] = Link::fromTextAndUrl('Edit', $edit);
       $i++;
     }
@@ -72,6 +72,22 @@ class PetsDataController extends ControllerBase {
       '#empty' => $this->t('No entries available.'),
     ];
     return $content;
+  }
+
+  /**
+   * @param null $pid
+   *
+   * @return \Symfony\Component\HttpFoundation\RedirectResponse
+   */
+  public function delete($pid = NULL) {
+    $query = \Drupal::database();
+    $query->delete('pets_owners_storage')
+      ->condition('pid', $pid)
+      ->execute();
+    $text = 'Record pid => ' . $pid . ' was removed from database.';
+    \Drupal::messenger()->addMessage($text);
+    // Redirect to a page that show all the records.
+    return $this->redirect('pets_owners_storage.content');
   }
 
 }
